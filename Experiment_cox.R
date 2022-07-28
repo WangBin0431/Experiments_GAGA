@@ -53,8 +53,9 @@ for(ii in 1:Num ){
   fit = glmnet(X,y,family = "cox",lambda = Lmd)
   Eb1 = fit$beta
   
-  Eb2 = GAGA(X,y,alpha=2,family = "cox", itrNum=20,fdiag=TRUE)
- 
+  fit_gaga = GAGA(X,y,alpha=2,family = "cox", itrNum=20,fdiag=TRUE)
+  Eb2 = fit_gaga$beta
+  
   err1 = norm(Eb1-beta_true,type="2")
   err2 = norm(Eb2-beta_true,type="2")
 
