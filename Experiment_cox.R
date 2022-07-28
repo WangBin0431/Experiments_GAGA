@@ -1,13 +1,8 @@
 # Demo of Gaga dealing with Cox model
-
-setwd("I:/GAGA/R")
 library(glmnet)
 library(mvtnorm)
-
+library(GAGA)
 set.seed(1234)
-source("calculate.R")
-source("cox_GAGA.R")
-
 
 Nlambda=100
 p_size = 50
@@ -58,7 +53,7 @@ for(ii in 1:Num ){
   fit = glmnet(X,y,family = "cox",lambda = Lmd)
   Eb1 = fit$beta
   
-  Eb2 = cox_GAGA(X,y,ratio=2,itrNum=20,fdiag=TRUE)
+  Eb2 = GAGA(X,y,alpha=2,family = "cox", itrNum=20,fdiag=TRUE)
  
   err1 = norm(Eb1-beta_true,type="2")
   err2 = norm(Eb2-beta_true,type="2")
@@ -66,8 +61,8 @@ for(ii in 1:Num ){
   ERR_glmnet[ii] = err1
   ERR_GAGA[ii] = err2
 
-  ACC_glmnet[ii] = calculate.w.accuracy(as.character(Eb1!=0),as.character(beta_true!=0))
-  ACC_GAGA[ii] = calculate.w.accuracy(as.character(Eb2!=0),as.character(beta_true!=0))
+  ACC_glmnet[ii] = cal.w.acc(as.character(Eb1!=0),as.character(beta_true!=0))
+  ACC_GAGA[ii] = cal.w.acc(as.character(Eb2!=0),as.character(beta_true!=0))
   
   #Prediction#######################################################################################################
   #Generate test samples
@@ -126,7 +121,7 @@ g3
 
 
 # library("R.matlab")
-# #filename ="F:/文档/GAGA/拟牛顿法求解logistic回归20190724/Example100.mat"
+# #filename ="F:/?牡?/GAGA/??牛?俜?????logistic?毓?20190724/Example100.mat"
 # writeMat(filename, X = X, y = y, Eb1 = Eb1, Ebb=Eb2, beta_true = beta_true)
 # 
 
@@ -156,7 +151,7 @@ g3
 
 
 # library("R.matlab")
-# filename ="I:/王晓飞/GAGA/生存模型/tmp2.mat"
+# filename ="I:/??????/GAGA/????模??/tmp2.mat"
 # mMAT = readMat(filename)
 # 
 # t = mMAT$t
