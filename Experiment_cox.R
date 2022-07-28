@@ -1,7 +1,9 @@
 # Demo of Gaga dealing with Cox model
 library(glmnet)
+library(ncvreg)
 library(mvtnorm)
 library(GAGA)
+library(survival)
 set.seed(1234)
 
 Nlambda=100
@@ -51,16 +53,27 @@ for(ii in 1:Num ){
   cvfit = cv.glmnet(X,y,family = "cox",type.measure = "C",nfolds = 10,nlambda=100)
   Lmd = cvfit$lambda.min
   fit = glmnet(X,y,family = "cox",lambda = Lmd)
-  Eb1 = fit$beta
+  Eb0 = fit$beta
+  
+  y_surv=Surv(y[,"time"],y[,"status"])
+  y_surv=y_surv[,1]
+  
+  cvfit_MCP <- cv.ncvreg(X, y_surv, penalty = "MCP",nfolds=10,nlambda = 100)
+  Eb1 = cvfit_MCP$fit$beta[,cvfit_SCAD$min][-1]
+
+  cvfit_SCAD <- cv.ncvreg(X, y_surv, penalty = "SCAD",nfolds=10,nlambda = 100)
+  Eb2 = cvfit_SCAD$fit$beta[,cvfit_SCAD$min][-1]
+ 
+  
   
   fit_gaga = GAGA(X,y,alpha=2,family = "cox", itrNum=20,fdiag=TRUE)
-  Eb2 = fit_gaga$beta
+  Eb3 = fit_gaga$beta
   
-  err1 = norm(Eb1-beta_true,type="2")
-  err2 = norm(Eb2-beta_true,type="2")
 
-  ERR_glmnet[ii] = err1
-  ERR_GAGA[ii] = err2
+  ERR_glmnet[ii] = norm(Eb0-beta_true,type="2")
+  ERR_MCP[ii] = norm(Eb1-beta_true,type="2")
+  ERR_SCAD[ii] = norm(Eb2-beta_true,type="2")
+  ERR_GAGA[ii] = norm(Eb3-beta_true,type="2")
 
   ACC_glmnet[ii] = cal.w.acc(as.character(Eb1!=0),as.character(beta_true!=0))
   ACC_GAGA[ii] = cal.w.acc(as.character(Eb2!=0),as.character(beta_true!=0))
