@@ -6,7 +6,7 @@ set.seed(1234)
 Nlambda = 100
 p_size = 8
 sample_size = 100
-expnum = 100
+expnum = 30
 Mean = 0
 Sd = 1
 
@@ -39,7 +39,7 @@ ACC_MCP_CV = NULL
 
 for (iter in 1:expnum) {
   cat("iter is:", iter, "\n")
-  
+
   signal = c(runif(1, 0, 1), runif(1, 0, 1), runif(1, 0, 1))
   beta_true = c(signal[1], signal[2], 0, 0, signal[3], 0, 0, 0)
   
