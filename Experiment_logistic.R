@@ -7,10 +7,10 @@ library(GAGA)
 set.seed(2022)
 Nlambda=100
 p_size = 100
-sample_size = 100
+sample_size = 500
 test_size = 1000
 
-rate = 0.9 #Proportion of value zero in beta
+rate = 0.5 #Proportion of value zero in beta
 Num = 10 # Total number of experiments
 
 R1 = 5

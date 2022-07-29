@@ -70,16 +70,17 @@ for(ii in 1:Num ){
  
   
   #Estimation
-  cvfit = cv.glmnet(X, y, family = "multinomial", type.measure = "class",nfolds = 10, lambda.min=0.00001,nlambda =Nlambda)
+  cvfit = cv.glmnet(X[,-1], y, family = "multinomial", type.measure = "class",nfolds = 10, lambda.min=0.00001,nlambda =Nlambda)
 
   Lmd = cvfit$lambda.min
 
-  fitx = glmnet(X, y, family = "multinomial",lambda = Lmd)
+  fitx = glmnet(X[,-1], y, family = "multinomial",lambda = Lmd)
   tmp = fitx$beta
-  Eb1 = matrix(rep(1,C*p_size),c(p_size,C))
+  Eb1 = matrix(rep(1,C*p_size-C),c(p_size-1,C))
   for(kk in 1:C){
     Eb1[,kk] = as.matrix(tmp[[kk]])
   }
+  Eb1 = rbind(as.numeric(fitx$a0[1:C]),Eb1)
  
   fit_gaga = GAGA(X, y,alpha=2,family = "multinomial")
   Eb2 = fit_gaga$beta
@@ -107,7 +108,7 @@ for(ii in 1:Num ){
     # y_t[jj] = which.max(t[jj,])
   } 
   
-  Ey1 = predict(fitx, newx = X_t, type = "class")
+  Ey1 = predict(fitx, newx = X_t[,-1], type = "class")
 
   Ey2 = predict.GAGA(fit_gaga, newx = X_t)
   

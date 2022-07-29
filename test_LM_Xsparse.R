@@ -39,10 +39,10 @@ for(ii in 1:Num ){
   
   
   #Estimation
-  cvfit = cv.glmnet(X, y, family = "gaussian", intercept = FALSE, type.measure = "mse",nfolds = 10, lambda.min=0.00001,nlambda =Nlambda)
+  cvfit = cv.glmnet(X[,-1], y, family = "gaussian", type.measure = "mse",nfolds = 10, lambda.min=0.00001,nlambda =Nlambda)
   Lmd = cvfit$lambda.min
-  fit1 = glmnet(X, y, family = "gaussian", intercept = FALSE, lambda = Lmd)
-  Eb1 = fit1$beta
+  fit1 = glmnet(X[,-1], y, family = "gaussian", lambda = Lmd)
+  Eb1 = rbind(fit1$a0,fit1$beta)
   
   fit2 = GAGA(X, y,alpha=2, family = "gaussian")
   Eb2 = fit2$beta

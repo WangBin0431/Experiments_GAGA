@@ -14,14 +14,20 @@ test_size = 1000
 R1 = 3
 R2 = 1
 rate = 0.5 #Proportion of value zero in beta
-censoringRate = 0.25 #Proportion of censoring data in observation data
+censoringRate = 0.2 #Proportion of censoring data in observation data
 Num = 10 # Total number of experiments
 
 ERR_glmnet = NULL
 ACC_glmnet = NULL
+ERR_MCP = NULL
+ACC_MCP = NULL
+ERR_SCAD = NULL
+ACC_SCAD = NULL
 ERR_GAGA = NULL
 ACC_GAGA = NULL
 Cidx_glmnet = NULL
+Cidx_MCP = NULL
+Cidx_SCAD = NULL
 Cidx_GAGA = NULL
 
 for(ii in 1:Num ){
@@ -56,29 +62,27 @@ for(ii in 1:Num ){
   Eb0 = fit$beta
   
   y_surv=Surv(y[,"time"],y[,"status"])
-  y_surv=y_surv[,1]
   
-  cvfit_MCP <- cv.ncvreg(X, y_surv, penalty = "MCP",nfolds=10,nlambda = 100)
-  Eb1 = cvfit_MCP$fit$beta[,cvfit_SCAD$min][-1]
+  cvfit_MCP <- cv.ncvsurv(X, y_surv, penalty = "MCP",nfolds=10,nlambda = 100)
+  Eb1 = cvfit_MCP$fit$beta[,cvfit_MCP$min]
 
-  cvfit_SCAD <- cv.ncvreg(X, y_surv, penalty = "SCAD",nfolds=10,nlambda = 100)
-  Eb2 = cvfit_SCAD$fit$beta[,cvfit_SCAD$min][-1]
+  cvfit_SCAD <- cv.ncvsurv(X, y_surv, penalty = "SCAD",nfolds=10,nlambda = 100)
+  Eb2 = cvfit_SCAD$fit$beta[,cvfit_SCAD$min]
  
-  
-  
-  fit_gaga = GAGA(X,y,alpha=2,family = "cox", itrNum=20,fdiag=TRUE)
+  fit_gaga = GAGA(X,y,alpha=3,family = "cox", itrNum=20,fdiag=TRUE)
   Eb3 = fit_gaga$beta
-  
 
   ERR_glmnet[ii] = norm(Eb0-beta_true,type="2")
   ERR_MCP[ii] = norm(Eb1-beta_true,type="2")
   ERR_SCAD[ii] = norm(Eb2-beta_true,type="2")
   ERR_GAGA[ii] = norm(Eb3-beta_true,type="2")
 
-  ACC_glmnet[ii] = cal.w.acc(as.character(Eb1!=0),as.character(beta_true!=0))
-  ACC_GAGA[ii] = cal.w.acc(as.character(Eb2!=0),as.character(beta_true!=0))
+  ACC_glmnet[ii] = cal.w.acc(as.character(Eb0!=0),as.character(beta_true!=0))
+  ACC_MCP[ii] = cal.w.acc(as.character(Eb1!=0),as.character(beta_true!=0))
+  ACC_SCAD[ii] = cal.w.acc(as.character(Eb2!=0),as.character(beta_true!=0))
+  ACC_GAGA[ii] = cal.w.acc(as.character(Eb3!=0),as.character(beta_true!=0))
   
-  #Prediction#######################################################################################################
+  #Prediction
   #Generate test samples
   X = R1*rmvnorm(n=test_size, mean=rep(0, nrow(cov_mat)), sigma=cov_mat)
   z = X%*%beta_true
@@ -93,32 +97,40 @@ for(ii in 1:Num ){
   y = cbind(t,1 - cs)
   colnames(y) = c("time", "status")
   
-  pred1 = predict(fit, newx = X)
-  Cidx_glmnet[ii] = apply(pred1, 2, Cindex, y=y)
-  tmpfit = fit
-  tmpfit$beta = Matrix(Eb2,sparse = TRUE)
-  pred2 = predict(tmpfit, newx = X)
-  Cidx_GAGA[ii] = apply(pred2, 2, Cindex, y=y)
+  pred0 = predict(fit, newx = X)
+  Cidx_glmnet[ii] = apply(pred0, 2, Cindex, y=y)
   
+  pred1 = predict(cvfit_MCP, X,lambda=cvfit_MCP$lambda.min)
+  Cidx_MCP[ii] = apply(as.matrix(pred1), 2, Cindex, y=y)
   
+  pred2 = predict(cvfit_SCAD, X,lambda=cvfit_MCP$lambda.min)
+  Cidx_SCAD[ii] = apply(as.matrix(pred2), 2, Cindex, y=y)
 
+  pred3 = predict.GAGA(fit_gaga, X)
+  Cidx_GAGA[ii] = cal.cindex(pred3,y)
 }
 
 mean_ERR_glmnet = mean(ERR_glmnet)
+mean_ERR_MCP = mean(ERR_MCP)
+mean_ERR_SCAD = mean(ERR_SCAD)
 mean_ERR_GAGA = mean(ERR_GAGA)
 mean_ACC_glmnet = mean(ACC_glmnet)
+mean_ACC_MCP = mean(ACC_MCP)
+mean_ACC_SCAD = mean(ACC_SCAD)
 mean_ACC_GAGA = mean(ACC_GAGA)
 mean_Cidx_glmnet = mean(Cidx_glmnet)
+mean_Cidx_MCP = mean(Cidx_MCP)
+mean_Cidx_SCAD = mean(Cidx_SCAD)
 mean_Cidx_GAGA = mean(Cidx_GAGA)
 
 #Plotting
 library(ggplot2)
 
-ERR=c(ERR_glmnet,ERR_GAGA)
-ACC=c(ACC_glmnet,ACC_GAGA)
+ERR=c(ERR_glmnet,ERR_MCP,ERR_SCAD,ERR_GAGA)
+ACC=c(ACC_glmnet,ACC_MCP,ACC_SCAD,ACC_GAGA)
 CIDX = c(Cidx_glmnet,Cidx_GAGA)
-Algorithms=factor(c(rep('glmnet_COX',Num),rep('GAGA_COX',Num)),
-                  levels=c('glmnet_COX','GAGA_COX'))
+Algorithms=factor(c(rep('glmnet_COX',Num),rep('MCP_COX',Num),rep('SCAD_COX',Num),rep('GAGA_COX',Num)),
+                  levels=c('glmnet_COX','MCP_COX','SCAD_COX','GAGA_COX'))
 ERR_ACC_CIDX=data.frame(ERR,ACC,CIDX,Algorithms)
 
 g1=ggplot(ERR_ACC_CIDX, aes(x=Algorithms, y=ERR,fill=Algorithms))+ylab("ERR") + geom_boxplot()#ERR box
@@ -129,66 +141,3 @@ g2
 
 g3=ggplot(ERR_ACC_CIDX, aes(x=Algorithms, y=CIDX,fill=Algorithms))+ylab("C-index") + geom_boxplot()#C-index box
 g3
-
-
-
-
-
-# library("R.matlab")
-# #filename ="F:/?ĵ?/GAGA/??ţ?ٷ?????logistic?ع?20190724/Example100.mat"
-# writeMat(filename, X = X, y = y, Eb1 = Eb1, Ebb=Eb2, beta_true = beta_true)
-# 
-
-
-
-# library(survival)
-# data(CoxExample)
-# y = CoxExample$y
-# X = CoxExample$x
-# y = y[1:400,]
-# X = X[1:400,]
-# cvfit = cv.glmnet(X,y,family = "cox",type.measure = "C", nfolds = 10,nlambda=100)
-# Lmd = cvfit$lambda.min
-# Eb1 = coef(cvfit,s = Lmd)
-# fit = glmnet(X,y,family = "cox",lambda = Lmd)
-# Eb5 = cox_GAGA(X,y,ratio=1,itrNum=20,lamda_0=5)
-# y = CoxExample$y
-# X = CoxExample$x
-# y = y[401:1000,]
-# X = X[401:1000,]
-# pred = predict(fit, newx = X)
-# cidx = apply(pred, 2, Cindex, y=y)
-# tmpfit = fit
-# tmpfit$beta = Matrix(Eb5,sparse = TRUE)
-# pred2 = predict(tmpfit, newx = X)
-# cidx2 = apply(pred2, 2, Cindex, y=y)
-
-
-# library("R.matlab")
-# filename ="I:/??????/GAGA/????ģ??/tmp2.mat"
-# mMAT = readMat(filename)
-# 
-# t = mMAT$t
-# cs = 1 - mMAT$cs
-# X = mMAT$X
-# y = cbind(t,cs)
-# colnames(y) = c("time", "status")
-# beta_true = mMAT$beta
-# Eb2 = mMAT$Eb2
-# 
-# Eb5 = cox_GAGA(X,y,ratio=2,itrNum=20)
-# err_GAGA2 = norm(Eb5-beta_true,type="2")
-# ACC_GAGA2 = calculate.w.accuracy(as.character(Eb5!=0),as.character(beta_true!=0))
-# 
-# 
-# 
-# cvfit = cv.glmnet(X,y,family = "cox",type.measure = "C",nfolds = 10,nlambda=100)
-# Lmd = cvfit$lambda.min
-# fitx = glmnet(X,y,family = "cox",lambda = Lmd)
-# Eb4 = fitx$beta
-# 
-# err_GAGA = norm(Eb2-beta_true,type="2")
-# err_glmnet = norm(Eb4-beta_true,type="2")
-# 
-# ACC_glmnet = calculate.w.accuracy(as.character(Eb4!=0),as.character(beta_true!=0))
-# ACC_GAGA = calculate.w.accuracy(as.character(Eb2!=0),as.character(beta_true!=0))
