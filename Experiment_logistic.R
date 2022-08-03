@@ -13,7 +13,7 @@ test_size = 1000
 rate = 0.5 #Proportion of value zero in beta
 Num = 10 # Total number of experiments
 
-R1 = 5
+R1 = 1
 R2 = 3
 
 ERR_glmnet = NULL
@@ -33,15 +33,9 @@ for(ii in 1:Num ){
   cat("iter is:",ii,"\n");
   #Set true beta
   zeroNum = round(rate*p_size)
-  ind1 = sample(1:p_size,p_size)
-  ind2 = ind1[1:zeroNum]
+  ind = sample(1:p_size,zeroNum)
   beta_true = runif(p_size,0.2*R2,R2)
-  
-  beta_true[ind2] = 0
-  ind3 = ind1[(zeroNum+1):p_size]
-  
-  beta_pos_true=ind3;
-  beta_pos_false=ind2;
+  beta_true[ind] = 0
   
   cov_mat=matrix(1:p_size*p_size,p_size,p_size) ##covariance matrix
   for(i in 1:p_size){for(j in 1:p_size) {if(i!=j){cov_mat[i,j]=0.0}else{cov_mat[i,j]=1}}}
